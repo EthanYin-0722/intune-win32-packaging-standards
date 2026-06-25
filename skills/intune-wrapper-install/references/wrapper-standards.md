@@ -1,0 +1,160 @@
+# Wrapper Standards
+
+Apply these standards to every Intune `install.ps1` wrapper.
+
+## Source Layout
+
+Default to a flat Intune content root named `/source`. Assume all payload files are directly beside `install.ps1` unless the user provides or asks for subfolders:
+
+```text
+source/
+  install.ps1
+  <installer.msi|setup.exe|patch.msp>
+  <transform.mst>
+  <response-file.iss|xml|ini>
+  <license/config files>
+  <vendor deployment notes, optional>
+```
+
+If the user supplies a nested source tree, preserve it. The wrapper must resolve files from `$PSScriptRoot`; never rely on current working directory.
+
+## Log Layout
+
+Default log root:
+
+```text
+C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\MQ\<Vendor>
+```
+
+Default files:
+
+- `<AppName>-<Version>-install-wrapper.log`: concise wrapper events.
+- `<AppName>-<Version>-install-transcript.log`: optional PowerShell transcript for deeper troubleshooting.
+- `<AppName>-<Version>-install-msi.log`, `<AppName>-<Version>-install-msp.log`, or `<AppName>-<Version>-install-vendor.log`: vendor/installer verbose log.
+
+The path shape is:
+
+```text
+C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\MQ\<Vendor>\<log>
+```
+
+Use sanitized path segments for `<Vendor>`, `<AppName>`, and `<Version>`.
+
+Wrapper log line format:
+
+```text
+yyyy-MM-ddTHH:mm:ss.fffzzz | LEVEL | PHASE | EVENT | Message | key=value; key=value
+```
+
+Example:
+
+```text
+2026-06-25T14:32:18.456+10:00 | INFO | START | BEGIN | Starting install | vendor=Contoso; app=Example App; version=5.2.0; context=SYSTEM
+2026-06-25T14:32:18.790+10:00 | INFO | PRECHECK | PASS | Source files found | installer=setup.exe
+2026-06-25T14:32:19.103+10:00 | INFO | INSTALL | EXEC | Running installer | type=EXE; log=Example App-5.2.0-install-vendor.log
+2026-06-25T14:45:02.221+10:00 | INFO | INSTALL | EXIT | Installer completed | exitCode=0
+2026-06-25T14:45:04.013+10:00 | INFO | VALIDATE | PASS | Application detected | method=fileVersion
+2026-06-25T14:45:04.500+10:00 | INFO | COMPLETE | SUCCESS | Install completed | exitCode=0
+```
+
+Use levels:
+
+- `INFO`: expected progress and final result.
+- `WARN`: fallback, optional item missing, retryable issue, reboot required.
+- `ERROR`: fatal issue that returns nonzero.
+
+Use phases:
+
+- `START`: metadata, context, log path.
+- `PRECHECK`: source files, prerequisites, license/config presence.
+- `INSTALL`: installer command summary and exit code.
+- `CONFIG`: license/config copy or post-install configuration.
+- `VALIDATE`: detection/vendor verification.
+- `FALLBACK`: alternate path after known failure.
+- `COMPLETE`: final outcome and exit code.
+
+Log decision points and outcomes only. Do not duplicate verbose MSI logs in the wrapper log.
+
+## Script Structure
+
+Use this order:
+
+1. Strict mode and constants.
+2. Logging helpers.
+3. Path resolution helpers.
+4. Process execution helper.
+5. Precheck block.
+6. Install block.
+7. Config block.
+8. Validation block.
+9. Return-code normalization.
+10. Catch/finally with final log line.
+
+When all package information is known, build the wrapper directly using `references/build-when-ready.md`; do not continue with generic intake questions.
+
+## Installer Patterns
+
+MSI:
+
+```text
+msiexec.exe /i "<msi>" /qn /norestart /L*v "<AppName>-<Version>-install-msi.log>"
+```
+
+MSP:
+
+```text
+msiexec.exe /p "<msp>" /qn /norestart /L*v "<AppName>-<Version>-install-msp.log>"
+```
+
+EXE/bootstrapper:
+
+- Use vendor-confirmed silent/wait/log switches only.
+- If the EXE starts child processes and exits early, use vendor wait switch or wrapper wait logic for the real process.
+- If EXE logging cannot target the team log root, capture wrapper events and document vendor log location.
+- If wrapper wait logic is needed, wait for a concrete install signal such as target file, registry key, service, or process completion with a bounded timeout. Log it under `FALLBACK`; do not wait indefinitely.
+
+## Validation
+
+Prefer validation in this order:
+
+1. MSI ProductCode in uninstall registry.
+2. File exists with minimum file/product version.
+3. Uninstall registry DisplayName and DisplayVersion.
+4. Vendor CLI or qualification tool.
+5. Service/process/marker only when vendor docs justify it.
+
+Never use `Win32_Product`.
+
+## Return Codes
+
+Default mapping:
+
+- `0`: success.
+- `3010`: soft reboot.
+- `1641`: hard reboot.
+- `1618`: retry.
+- Other nonzero: failed.
+
+Return the original installer reboot code when validation passes, so Intune can apply restart behavior. Return `1` when wrapper validation fails even if the installer returned `0`.
+
+Use `Complete-Install` for installer-controlled outcomes and `Fail-Install` for wrapper-controlled failures:
+
+- Installer returns `0`, `3010`, or `1641` and validation passes: return the original code.
+- Installer returns `1618`: return `1618` so Intune can retry.
+- Installer returns another nonzero code: return the installer code.
+- Installer returns success/reboot but validation fails: return `1`.
+- Install block does not assign `$ExitCode`: return `1`.
+- Precheck/config/wrapper exception fails: return `1` unless a vendor-approved code is more appropriate.
+
+## Security
+
+Do not log:
+
+- Activation keys.
+- License file contents.
+- Credentials or tokens.
+- Full command lines containing secrets.
+- Full environment dumps.
+- Complete registry exports.
+
+Log redacted values as `key=<redacted>` when the field matters diagnostically.

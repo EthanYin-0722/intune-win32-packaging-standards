@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intune Wrapper Install"
+  short_description: "Create Intune Win32 wrapper install scripts"
+  default_prompt: "Use $intune-wrapper-install to create a robust Intune Win32 PowerShell wrapper install script with logging and validation."
