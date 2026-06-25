@@ -24,31 +24,35 @@ Return these sections:
 2. **Source Layout**: flat `/source` file list or the user-provided tree.
 3. **Install Command**: the installer executable and arguments that the wrapper will run. Redact secrets and activation keys.
 4. **Install Logic**: short plain-language steps for precheck, install, config, validation, fallback, and completion.
-5. **Flow**: Mermaid flowchart when supported; otherwise a numbered flow.
+5. **Flow**: short text flow by default; Mermaid only if the user asks for a diagram.
 6. **Logs**: wrapper, transcript, and vendor/MSI log paths.
 7. **Validation**: exact signal used to decide install success.
 8. **Return Codes**: expected success, reboot, retry, and failure behavior.
 9. **Fallbacks And Risks**: bootstrapper waits, unverified switches, missing vendor docs, config sensitivity, or user-context concerns.
 10. **Confirmation Ask**: ask the user to confirm or correct the plan before final script generation.
 
-## Mermaid Flow Template
+## Simple Flow Template
 
-Use concise labels. Keep it product-neutral and avoid secrets.
+Use concise text. Keep it product-neutral and avoid secrets.
 
-```mermaid
-flowchart TD
-    A["Start install.ps1"] --> B["Create MQ log folder"]
-    B --> C["Precheck source and config"]
-    C -->|missing required file| X["Fail with exit 1"]
-    C --> D["Run installer with verified silent args"]
-    D --> E{"Installer exit code"}
-    E -->|1618| R["Return 1618 for Intune retry"]
-    E -->|non-success| F["Return installer failure code"]
-    E -->|0/3010/1641| G["Apply config if required"]
-    G --> H["Validate install signal"]
-    H -->|not detected| X
-    H -->|detected| I["Return original success/reboot code"]
+```text
+Start
+  -> Create MQ log folder
+  -> Precheck source/license/config
+  -> Run installer with verified silent args
+  -> Handle installer exit code
+  -> Apply config if required
+  -> Validate install signal
+  -> Return success/reboot code
+
+Failure paths:
+  - Missing required file -> exit 1
+  - Installer 1618 -> return 1618 for Intune retry
+  - Installer non-success -> return installer code
+  - Validation failed -> exit 1
 ```
+
+Use Mermaid only when a visual diagram would materially help or the user asks for one.
 
 ## Install Command Rules
 

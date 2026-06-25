@@ -97,7 +97,7 @@ Expected wrapper:
 - Assign `$ExitCode` from the EXE install branch before validation.
 - If the EXE cannot create directories or needs relative logs, wrapper handles folder prep and documents vendor log location.
 - Validate install before returning success.
-- Before final script generation, show a pre-final review with install command, flow, logs, validation, return codes, evidence, and risks.
+- Before final script generation, show a pre-final review with install command, simple text flow, logs, validation, return codes, evidence, and risks.
 
 ## Information Complete
 
@@ -112,7 +112,7 @@ Expected behavior:
 - Do not ask broad intake questions.
 - Show the pre-final review first, not the final script.
 - Include a readable install command summary with secrets redacted if present.
-- Include a concise flowchart or numbered flow for precheck, install, config, validation, fallback, and completion.
+- Include a concise text flow for precheck, install, config, validation, fallback, and completion.
 - Ask the user to confirm or correct the plan.
 - Generate the final `install.ps1` only after confirmation, unless the user explicitly asked to skip confirmation.
 

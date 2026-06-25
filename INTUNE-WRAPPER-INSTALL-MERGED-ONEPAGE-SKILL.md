@@ -44,7 +44,7 @@ The review should include:
 - Source layout: flat `source` file list or the provided source tree.
 - Install command: wrapper launcher plus the vendor installer command and arguments, with secrets redacted.
 - Install logic: precheck, install, config, validation, fallback, and completion.
-- Flow: Mermaid flowchart when supported; otherwise a numbered flow.
+- Flow: short text flow by default; Mermaid only if a visual diagram would materially help or the package owner asks for one.
 - Logs: wrapper, transcript, and vendor/MSI log paths.
 - Validation: exact install success signal.
 - Return codes: success, reboot, retry, and failure behavior.
@@ -52,19 +52,21 @@ The review should include:
 
 Example flow:
 
-```mermaid
-flowchart TD
-    A["Start install.ps1"] --> B["Create MQ log folder"]
-    B --> C["Precheck source and config"]
-    C -->|missing required file| X["Fail with exit 1"]
-    C --> D["Run installer with verified silent args"]
-    D --> E{"Installer exit code"}
-    E -->|1618| R["Return 1618 for Intune retry"]
-    E -->|non-success| F["Return installer failure code"]
-    E -->|0/3010/1641| G["Apply config if required"]
-    G --> H["Validate install signal"]
-    H -->|not detected| X
-    H -->|detected| I["Return original success/reboot code"]
+```text
+Start
+  -> Create MQ log folder
+  -> Precheck source/license/config
+  -> Run installer with verified silent args
+  -> Handle installer exit code
+  -> Apply config if required
+  -> Validate install signal
+  -> Return success/reboot code
+
+Failure paths:
+  - Missing required file -> exit 1
+  - Installer 1618 -> return 1618 for Intune retry
+  - Installer non-success -> return installer code
+  - Validation failed -> exit 1
 ```
 
 End the review with:
