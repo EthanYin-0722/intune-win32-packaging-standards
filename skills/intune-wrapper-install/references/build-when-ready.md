@@ -4,7 +4,7 @@ Use this guide when the user has already provided installer details, source layo
 
 ## Required Inputs
 
-Do not ask more questions if these are known:
+Do not ask more intake questions if these are known:
 
 - Vendor, app name, version, architecture, and install context.
 - Installer relative path under the package root.
@@ -16,9 +16,11 @@ Do not ask more questions if these are known:
 
 If one of these is missing but can be inferred safely from a local installer, inspect it. Otherwise ask only for that missing item.
 
+When these inputs are known, use `pre-final-review.md` before writing the final script unless the user explicitly skipped or already approved that review. The review is a confirmation checkpoint, not a new intake round.
+
 ## Standard Output
 
-Return the package in this order:
+After the user confirms the pre-final review, return the package in this order:
 
 1. `Source Layout`: tree of the Win32 content root.
 2. `install.ps1`: full script, not pseudocode.
@@ -29,6 +31,15 @@ Return the package in this order:
 7. `Assumptions`: only items not proven by artifact inspection or official docs.
 
 ## Build Steps
+
+Before writing the final `install.ps1`, confirm these core decisions with the user in a readable pre-final review:
+
+- Source layout and installer relative path.
+- Effective installer command and evidence level, with secrets redacted.
+- Install logic flow: precheck, install, config, validation, fallback, completion.
+- Log paths and log format.
+- Validation signal and expected return-code behavior.
+- Assumptions, risks, and anything still unverified.
 
 Use a flat `/source` content root by default:
 
@@ -107,6 +118,7 @@ Do not log:
 
 Before handing off, check:
 
+- Pre-final review has been confirmed, or confirmation was explicitly skipped by the user.
 - No placeholders remain.
 - All referenced source files exist in the proposed source tree.
 - Installer arguments are quoted correctly.

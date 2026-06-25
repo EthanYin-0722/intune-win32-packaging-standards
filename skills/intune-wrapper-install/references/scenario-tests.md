@@ -97,6 +97,24 @@ Expected wrapper:
 - Assign `$ExitCode` from the EXE install branch before validation.
 - If the EXE cannot create directories or needs relative logs, wrapper handles folder prep and documents vendor log location.
 - Validate install before returning success.
+- Before final script generation, show a pre-final review with install command, flow, logs, validation, return codes, evidence, and risks.
+
+## Information Complete
+
+User:
+
+```text
+Vendor is Contoso, app is Example App 5.2 x64. Source has install.ps1 and setup.exe. Official docs say setup.exe /quiet /norestart /log <path>. Validate by C:\Program Files\Contoso\Example\App.exe version 5.2.0. Install under SYSTEM.
+```
+
+Expected behavior:
+
+- Do not ask broad intake questions.
+- Show the pre-final review first, not the final script.
+- Include a readable install command summary with secrets redacted if present.
+- Include a concise flowchart or numbered flow for precheck, install, config, validation, fallback, and completion.
+- Ask the user to confirm or correct the plan.
+- Generate the final `install.ps1` only after confirmation, unless the user explicitly asked to skip confirmation.
 
 ## License Or Config Copy
 

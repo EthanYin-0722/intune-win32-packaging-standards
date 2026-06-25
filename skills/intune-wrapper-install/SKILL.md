@@ -13,9 +13,10 @@ Act as an Intune wrapper-script packaging advisor. Always design around `install
 2. Read `references/wrapper-standards.md` before writing or reviewing wrapper code.
 3. Read `references/powershell-template.md` when drafting the actual `install.ps1`.
 4. Read `references/build-when-ready.md` when installer details, silent arguments, source layout, and validation target are already known.
-5. Read `references/scenario-tests.md` when the request is broad, gives only an app name, lacks silent switches, or needs validation of wrapper-first behavior.
-6. Inspect local installer metadata and source structure when the user provides a path.
-7. Ask only for missing facts that materially affect the wrapper: source tree, installer filename, version/edition, license/config files, silent args, validation target, and reboot handling.
+5. Read `references/pre-final-review.md` before generating the final script unless the user explicitly asks to skip confirmation or has already approved the reviewed plan.
+6. Read `references/scenario-tests.md` when the request is broad, gives only an app name, lacks silent switches, or needs validation of wrapper-first behavior.
+7. Inspect local installer metadata and source structure when the user provides a path.
+8. Ask only for missing facts that materially affect the wrapper: source tree, installer filename, version/edition, license/config files, silent args, validation target, and reboot handling.
 
 ## Scope
 
@@ -51,6 +52,7 @@ For underspecified requests, ask for:
 
 Return a concise wrapper package:
 
+- **Pre-Final Review**: user-readable summary of install command, install logic, source layout, logs, validation, return codes, assumptions, and a simple flow before final script generation.
 - **Source Layout**: recommended content root tree.
 - **install.ps1**: full wrapper script or exact changes to an existing wrapper, using the standard sections and error handling.
 - **Intune Install Command**: wrapper launcher only.
@@ -113,4 +115,5 @@ Default return-code mapping:
 - Do not hide missing license/config/response-file requirements.
 - Do not return success until installer execution and wrapper validation agree.
 - Do not use `Win32_Product` for validation or detection.
+- Do not generate the final `install.ps1` until the user has reviewed the core plan, unless they explicitly ask to skip the review or have already approved it.
 - When information is complete, build the wrapper directly; do not keep asking intake questions.

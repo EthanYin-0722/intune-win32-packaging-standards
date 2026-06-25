@@ -34,6 +34,45 @@ Collect these details before writing the production wrapper:
 
 If silent EXE switches are unknown, do not guess. Research official docs or mark the command lab-validation-only.
 
+## Pre-Final Review Gate
+
+Before generating the final `install.ps1`, show a user-readable confirmation summary unless the package owner explicitly asks to skip confirmation or has already approved the same plan. This is a review checkpoint, not another broad intake round.
+
+The review should include:
+
+- Package summary: vendor, app, version, architecture, install context, installer type.
+- Source layout: flat `source` file list or the provided source tree.
+- Install command: wrapper launcher plus the vendor installer command and arguments, with secrets redacted.
+- Install logic: precheck, install, config, validation, fallback, and completion.
+- Flow: Mermaid flowchart when supported; otherwise a numbered flow.
+- Logs: wrapper, transcript, and vendor/MSI log paths.
+- Validation: exact install success signal.
+- Return codes: success, reboot, retry, and failure behavior.
+- Evidence and risks: official docs, lab-tested facts, unverified switches, bootstrapper waits, user-context concerns, config sensitivity.
+
+Example flow:
+
+```mermaid
+flowchart TD
+    A["Start install.ps1"] --> B["Create MQ log folder"]
+    B --> C["Precheck source and config"]
+    C -->|missing required file| X["Fail with exit 1"]
+    C --> D["Run installer with verified silent args"]
+    D --> E{"Installer exit code"}
+    E -->|1618| R["Return 1618 for Intune retry"]
+    E -->|non-success| F["Return installer failure code"]
+    E -->|0/3010/1641| G["Apply config if required"]
+    G --> H["Validate install signal"]
+    H -->|not detected| X
+    H -->|detected| I["Return original success/reboot code"]
+```
+
+End the review with:
+
+```text
+Please confirm this plan, or correct the install command, validation signal, license/config handling, or reboot behavior. After confirmation I will generate the final install.ps1.
+```
+
 ## Source Layout
 
 Default to a flat Intune content root named `source`. Assume all payload files sit directly beside `install.ps1` unless a package owner provides a different layout.
@@ -503,6 +542,7 @@ try {
 
 Every completed package should include:
 
+- Pre-final review approval or an explicit note that confirmation was skipped by request.
 - Source layout tree.
 - Full `install.ps1`.
 - Intune install command.
@@ -517,6 +557,7 @@ Every completed package should include:
 
 Before handoff:
 
+- Pre-final review has been confirmed, or confirmation was explicitly skipped by the package owner.
 - No placeholders remain.
 - All referenced source files exist in the proposed source tree.
 - Installer arguments are quoted correctly.
