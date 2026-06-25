@@ -148,6 +148,22 @@ Expected wrapper:
 - Log fallback behavior under `FALLBACK`.
 - Validate before returning success.
 
+## Complex Upgrade Or Cleanup
+
+User:
+
+```text
+Before installing the new version, remove old versions and clean leftover files.
+```
+
+Expected wrapper behavior:
+
+- Use the pre-final review gate before final script generation.
+- Upgrade the review flow from simple text to Mermaid because the package has multiple decision branches.
+- Show detection of target version, old-version uninstall, cleanup, install, config, validation, and return-code behavior.
+- Confirm destructive cleanup scope with the user before writing final script.
+- Do not delete files, registry keys, services, scheduled tasks, or user data unless the user has approved the exact scope.
+
 ## Custom Source Tree
 
 User:

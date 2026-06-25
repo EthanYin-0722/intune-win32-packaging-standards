@@ -24,7 +24,7 @@ Return these sections:
 2. **Source Layout**: flat `/source` file list or the user-provided tree.
 3. **Install Command**: the installer executable and arguments that the wrapper will run. Redact secrets and activation keys.
 4. **Install Logic**: short plain-language steps for precheck, install, config, validation, fallback, and completion.
-5. **Flow**: short text flow by default; Mermaid only if the user asks for a diagram.
+5. **Flow**: short text flow by default; Mermaid when package logic is complex or the user asks for a diagram.
 6. **Logs**: wrapper, transcript, and vendor/MSI log paths.
 7. **Validation**: exact signal used to decide install success.
 8. **Return Codes**: expected success, reboot, retry, and failure behavior.
@@ -52,7 +52,39 @@ Failure paths:
   - Validation failed -> exit 1
 ```
 
-Use Mermaid only when a visual diagram would materially help or the user asks for one.
+Use Mermaid when a visual diagram would materially help, the user asks for one, or the wrapper has complex branching such as:
+
+- Uninstalling old versions before install.
+- Cleaning old files, registry keys, services, scheduled tasks, or processes.
+- Installing prerequisites before the main app.
+- Handling EXE/bootstrapper child-process waits or fallback signals.
+- Branching on already-installed, upgrade, downgrade, side-by-side, or blocked versions.
+- Handling multiple license/config paths.
+- Checking reboot-pending state before install.
+
+## Complex Flow Template
+
+Use this style for packages that remove old software or clean the environment before installing.
+
+```mermaid
+flowchart TD
+    A["Start install.ps1"] --> B["Create MQ log folder"]
+    B --> C["Detect current install state"]
+    C -->|target version installed| S["Return 0"]
+    C -->|old version found| U["Uninstall old version"]
+    U --> L["Clean leftovers"]
+    C -->|not installed| P["Precheck source/config"]
+    L --> P
+    P -->|missing required file| X["Fail exit 1"]
+    P --> I["Install target version"]
+    I --> E{"Installer exit code"}
+    E -->|1618| R["Return 1618 retry"]
+    E -->|non-success| F["Return installer code"]
+    E -->|success/reboot| G["Apply config/license"]
+    G --> V["Validate target version"]
+    V -->|detected| O["Return original success/reboot code"]
+    V -->|not detected| X
+```
 
 ## Install Command Rules
 

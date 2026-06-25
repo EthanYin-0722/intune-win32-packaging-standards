@@ -44,7 +44,7 @@ The review should include:
 - Source layout: flat `source` file list or the provided source tree.
 - Install command: wrapper launcher plus the vendor installer command and arguments, with secrets redacted.
 - Install logic: precheck, install, config, validation, fallback, and completion.
-- Flow: short text flow by default; Mermaid only if a visual diagram would materially help or the package owner asks for one.
+- Flow: short text flow by default; Mermaid when package logic is complex or the package owner asks for one.
 - Logs: wrapper, transcript, and vendor/MSI log paths.
 - Validation: exact install success signal.
 - Return codes: success, reboot, retry, and failure behavior.
@@ -67,6 +67,38 @@ Failure paths:
   - Installer 1618 -> return 1618 for Intune retry
   - Installer non-success -> return installer code
   - Validation failed -> exit 1
+```
+
+Use Mermaid when a visual diagram would materially help, the package owner asks for one, or the wrapper has complex branching such as:
+
+- Uninstalling old versions before install.
+- Cleaning old files, registry keys, services, scheduled tasks, or processes.
+- Installing prerequisites before the main app.
+- Handling EXE/bootstrapper child-process waits or fallback signals.
+- Branching on already-installed, upgrade, downgrade, side-by-side, or blocked versions.
+- Handling multiple license/config paths.
+- Checking reboot-pending state before install.
+
+Complex flow example:
+
+```mermaid
+flowchart TD
+    A["Start install.ps1"] --> B["Create MQ log folder"]
+    B --> C["Detect current install state"]
+    C -->|target version installed| S["Return 0"]
+    C -->|old version found| U["Uninstall old version"]
+    U --> L["Clean leftovers"]
+    C -->|not installed| P["Precheck source/config"]
+    L --> P
+    P -->|missing required file| X["Fail exit 1"]
+    P --> I["Install target version"]
+    I --> E{"Installer exit code"}
+    E -->|1618| R["Return 1618 retry"]
+    E -->|non-success| F["Return installer code"]
+    E -->|success/reboot| G["Apply config/license"]
+    G --> V["Validate target version"]
+    V -->|detected| O["Return original success/reboot code"]
+    V -->|not detected| X
 ```
 
 End the review with:
