@@ -1,6 +1,6 @@
-# Intune Win32 Wrapper Install Standard
+# Intune Win32 Wrapper Install Merged Onepage Skill
 
-Use this document as the team standard for creating `install.ps1` wrapper scripts for Microsoft Intune Win32 apps. It is tool-agnostic: it can be used by Codex, ChatGPT, another AI assistant, or by an engineer writing the script manually.
+Use this merged onepage skill as the team standard for creating `install.ps1` wrapper scripts for Microsoft Intune Win32 apps. It consolidates the split Codex skill files into one human-readable reference. It is tool-agnostic: it can be used by Codex, ChatGPT, another AI assistant, or by an engineer writing the script manually.
 
 ## Goal
 
