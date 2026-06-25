@@ -120,8 +120,23 @@ Extract:
 - Whether the installer creates log directories or needs the wrapper to create them.
 - Required transforms, response files, license files, license server values, or config files.
 - Dependencies, prerequisite order, and install context.
+- Install scope switch or property: all-users, per-machine, per-user, current-user, or context-dependent behavior.
+- Installation directory support, including whether custom paths are supported and how they must be passed.
 - Expected success, reboot, retry, and failure exit codes.
 - Vendor-recommended validation method.
+
+Prefer machine-wide/all-user installation for managed system-context deployments. Use per-user installation only when vendor documentation, installer behavior, or a tested package requirement proves it is required.
+
+Do not infer silent switches or installation directories from product names. Confirm them from official vendor documentation, installer-technology documentation, installer help output, installer metadata, or lab validation.
+
+Evidence levels:
+
+- `official`: vendor deployment/admin documentation.
+- `installer-help`: help output from the installer, such as `setup.exe /?`.
+- `installer-tech-doc`: documentation for the confirmed installer technology, such as MSI, NSIS, Inno Setup, InstallShield, WiX Burn, or Squirrel.
+- `metadata`: MSI table/property data, version metadata, manifest information, or signed vendor metadata.
+- `lab-tested`: observed under a representative managed/system context.
+- `unverified`: not yet proven; requires validation before production use.
 
 ## Script Structure
 
@@ -155,9 +170,15 @@ msiexec.exe /p "<msp>" /qn /norestart /L*v "<msp-log>"
 EXE/bootstrapper:
 
 - Use vendor-confirmed silent, wait, and log switches only.
+- Prefer machine-wide/all-user installation for managed system-context deployments. Use per-user only when evidence proves it is required.
 - If the EXE starts child processes and exits early, use a vendor wait switch or a lab-tested wrapper wait strategy.
 - If EXE logging cannot target the team log root, capture wrapper events and document the vendor log location.
 - If wrapper wait logic is needed, wait for a concrete install signal such as target file, registry key, service, or process completion with a bounded timeout. Log it under `FALLBACK`; do not wait indefinitely.
+- For NSIS installers, keep `/D=<path>` as the final argument. If supported, prefer:
+
+```text
+/S /AllUsers /D=<machine-wide install dir>
+```
 
 ## Validation Standard
 
@@ -170,6 +191,15 @@ Prefer validation in this order:
 5. Service/process/marker only when vendor docs justify it.
 
 Never use `Win32_Product`.
+
+Always make validation StrictMode-safe:
+
+- Do not read optional registry, WMI, JSON, or external-object properties with direct dot access unless the property is guaranteed by the object contract.
+- For uninstall registry scans, treat `DisplayName`, `DisplayVersion`, `InstallLocation`, `UninstallString`, `Publisher`, and `QuietUninstallString` as optional.
+- Use a helper such as `Get-ObjectPropertyValue` to read optional properties through `PSObject.Properties`.
+- Combine multiple detection signals when possible, such as ProductCode, DisplayName, DisplayVersion, UninstallString, install directory, and known files.
+- Add an idempotent pre-install detection path when a reliable detection method exists. If the app is already detected, log `VALIDATE | PASS` and return `0` before rerunning the installer.
+- Dry-run detection logic on a representative machine under `Set-StrictMode -Version Latest` before packaging, especially when scanning uninstall registry keys.
 
 ## Return Codes
 
@@ -261,6 +291,22 @@ function Resolve-PackagePath {
     return $path
 }
 
+function Get-ObjectPropertyValue {
+    param(
+        [Parameter(Mandatory = $true)][object]$InputObject,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [AllowNull()][object]$Default = ''
+    )
+    $property = $InputObject.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $Default
+    }
+    if ($null -eq $property.Value) {
+        return $Default
+    }
+    return $property.Value
+}
+
 function Invoke-Installer {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
@@ -298,6 +344,51 @@ function Wait-ForInstallSignal {
     }
     Write-PackageLog -Level WARN -Phase FALLBACK -Event TIMEOUT -Message 'Timed out waiting for install signal' -Data @{ signal = $Description }
     return $false
+}
+
+function Get-UninstallRegistryDetection {
+    param(
+        [Parameter(Mandatory = $true)][string]$DisplayNamePattern,
+        [string]$DisplayVersionPattern = '',
+        [string]$InstallLocation = ''
+    )
+    $uninstallRoots = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    foreach ($root in $uninstallRoots) {
+        $items = Get-ItemProperty -Path $root -ErrorAction SilentlyContinue
+        foreach ($item in $items) {
+            $displayName = [string](Get-ObjectPropertyValue -InputObject $item -Name 'DisplayName')
+            $displayVersion = [string](Get-ObjectPropertyValue -InputObject $item -Name 'DisplayVersion')
+            $itemInstallLocation = [string](Get-ObjectPropertyValue -InputObject $item -Name 'InstallLocation')
+            $uninstallString = [string](Get-ObjectPropertyValue -InputObject $item -Name 'UninstallString')
+
+            if ([string]::IsNullOrWhiteSpace($displayName)) {
+                continue
+            }
+
+            $nameMatches = $displayName -match $DisplayNamePattern
+            $versionMatches = [string]::IsNullOrWhiteSpace($DisplayVersionPattern) -or
+                $displayVersion -like $DisplayVersionPattern -or
+                $displayName -match [regex]::Escape($DisplayVersionPattern.TrimEnd('*'))
+            $locationMatches = -not [string]::IsNullOrWhiteSpace($InstallLocation) -and (
+                $itemInstallLocation.TrimEnd('\') -ieq $InstallLocation.TrimEnd('\') -or
+                $uninstallString -match [regex]::Escape($InstallLocation)
+            )
+
+            if ($nameMatches -and ($versionMatches -or $locationMatches)) {
+                return [pscustomobject]@{
+                    Method = 'uninstallRegistry'
+                    DisplayName = $displayName
+                    DisplayVersion = $displayVersion
+                    InstallLocation = $itemInstallLocation
+                    UninstallString = $uninstallString
+                }
+            }
+        }
+    }
+    return $null
 }
 
 function Complete-Install {
@@ -346,6 +437,17 @@ try {
     $InstallerPath = Resolve-PackagePath -RelativePath $InstallerRelativePath
     Write-PackageLog -Level INFO -Phase PRECHECK -Event PASS -Message 'Source files found' -Data @{ installer = $InstallerRelativePath }
 
+    # Optional idempotent precheck. Replace this with a product-specific detection function.
+    # $ExistingDetection = Get-UninstallRegistryDetection -DisplayNamePattern '<escaped app display name>' -DisplayVersionPattern "$AppVersion*" -InstallLocation '<install directory>'
+    # if ($null -ne $ExistingDetection) {
+    #     Write-PackageLog -Level INFO -Phase VALIDATE -Event PASS -Message 'Application already detected before install' -Data @{
+    #         method = $ExistingDetection.Method
+    #         displayName = $ExistingDetection.DisplayName
+    #         displayVersion = $ExistingDetection.DisplayVersion
+    #     }
+    #     Complete-Install -ExitCode 0
+    # }
+
     # INSTALL - REQUIRED: assign $ExitCode from exactly one installer branch.
     $ExitCode = $null
 
@@ -371,6 +473,7 @@ try {
 
     # VALIDATE
     # Use MSI ProductCode, file version, registry, or vendor validation here.
+    # Registry/WMI/external-object validation must use Get-ObjectPropertyValue for optional properties.
     if ($null -eq $ExitCode) {
         Fail-Install -Message 'Installer exit code was not captured; update the INSTALL block to assign $ExitCode' -ExitCode 1
     }
@@ -406,6 +509,7 @@ Every completed package should include:
 - Log paths.
 - Validation method and recommended Intune detection rule.
 - Return-code mapping.
+- Evidence used for silent switches, install scope, install directory, validation, and return-code handling.
 - Official docs used, or an explicit unverified/lab-only note.
 - Assumptions and known risks.
 
@@ -420,6 +524,9 @@ Before handoff:
 - Wrapper uses `$PSScriptRoot`.
 - Wrapper creates the MQ log folder before installer execution.
 - Wrapper validation cannot pass because of a hardcoded `$true`.
+- Optional registry/WMI/external-object properties are read safely through `PSObject.Properties` or a helper, not direct dot access.
+- Detection code has been dry-run under `Set-StrictMode -Version Latest` on a representative machine when local state is available.
+- Idempotent already-installed behavior has been considered and implemented when reliable detection exists.
 - Failure paths call `Fail-Install` or `Complete-Install`, not raw `exit`, except as final lines inside those helpers.
 - Script does not log secrets.
 - EXE silent switches are official or lab-tested.
