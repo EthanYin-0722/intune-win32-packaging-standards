@@ -12,6 +12,10 @@ Skip the gate only when:
 - The user has already approved the same reviewed plan.
 - The task is a narrow mechanical edit to an existing script and the change has no install-flow impact.
 
+The gate is mandatory before implementation. Do not treat requests like "build the folder", "make the package", "create the source", "copy the installer", "run the packaging tool", or "update the script" as approval to proceed unless the user also explicitly confirms the reviewed plan with wording such as "go ahead", "implement", "generate it", "build it", "create it", "proceed", or "approved".
+
+Before confirmation, allowed actions are limited to non-destructive inspection, official documentation research, metadata extraction, plan drafting, and asking focused questions. Do not write or overwrite package files, copy installers, create final package folders, run IntuneWinAppUtil, or perform cleanup/build actions.
+
 This gate is not generic intake. Do not ask broad questions if the required facts are already known. Ask the user to confirm or correct the reviewed plan.
 
 ## Review Format
@@ -27,9 +31,10 @@ Return these sections:
 5. **Flow**: short text flow by default; Mermaid when package logic is complex or the user asks for a diagram.
 6. **Logs**: wrapper, transcript, and vendor/MSI log paths.
 7. **Validation**: exact signal used to decide install success.
-8. **Return Codes**: expected success, reboot, retry, and failure behavior.
-9. **Fallbacks And Risks**: bootstrapper waits, unverified switches, missing vendor docs, config sensitivity, or user-context concerns.
-10. **Confirmation Ask**: ask the user to confirm or correct the plan before final script generation.
+8. **Optional Pre-Intune Validation**: state that after packaging is complete, the user will be asked whether to run an elevated RunAs validation before upload.
+9. **Return Codes**: expected success, reboot, retry, and failure behavior.
+10. **Fallbacks And Risks**: bootstrapper waits, unverified switches, missing vendor docs, config sensitivity, user-context concerns, or validation-machine impact.
+11. **Confirmation Ask**: ask the user to confirm or correct the plan before final script generation.
 
 ## Simple Flow Template
 
@@ -99,5 +104,5 @@ flowchart TD
 End with a direct, small ask:
 
 ```text
-Please confirm this plan, or correct the install command, validation signal, license/config handling, or reboot behavior. After confirmation I will generate the final install.ps1.
+Please confirm this plan with "go ahead" or correct the install command, validation signal, license/config handling, cleanup scope, or reboot behavior. After explicit confirmation I will generate the package files.
 ```

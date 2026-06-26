@@ -16,7 +16,9 @@ Do not ask more intake questions if these are known:
 
 If one of these is missing but can be inferred safely from a local installer, inspect it. Otherwise ask only for that missing item.
 
-When these inputs are known, use `pre-final-review.md` before writing the final script unless the user explicitly skipped or already approved that review. The review is a confirmation checkpoint, not a new intake round.
+When these inputs are known, use `pre-final-review.md` before writing the final script or creating/building package files unless the user explicitly skipped or already approved that review. The review is a confirmation checkpoint, not a new intake round.
+
+Require explicit implementation confirmation after the review. Accept clear wording such as "go ahead", "implement", "generate it", "build it", "create it", "proceed", or "approved". Do not infer confirmation from a requested destination folder, package name, or broad instruction to make/build/create a package.
 
 ## Standard Output
 
@@ -27,12 +29,13 @@ After the user confirms the pre-final review, return the package in this order:
 3. `Intune Install Command`: wrapper launcher.
 4. `Log Output`: exact wrapper log and vendor log paths.
 5. `Validation`: post-install validation and recommended Intune detection.
-6. `Return Codes`: Intune mapping and any custom vendor codes.
-7. `Assumptions`: only items not proven by artifact inspection or official docs.
+6. `Optional Pre-Intune Validation`: ask whether the user wants an elevated RunAs validation before upload.
+7. `Return Codes`: Intune mapping and any custom vendor codes.
+8. `Assumptions`: only items not proven by artifact inspection or official docs.
 
 ## Build Steps
 
-Before writing the final `install.ps1`, confirm these core decisions with the user in a readable pre-final review:
+Before writing the final `install.ps1`, copying source files, creating package folders, or running packaging tools, confirm these core decisions with the user in a readable pre-final review:
 
 - Source layout and installer relative path.
 - Effective installer command and evidence level, with secrets redacted.
@@ -119,6 +122,7 @@ Do not log:
 Before handing off, check:
 
 - Pre-final review has been confirmed, or confirmation was explicitly skipped by the user.
+- The user explicitly authorized implementation with clear go-ahead wording after the review, unless they explicitly skipped review/confirmation.
 - No placeholders remain.
 - All referenced source files exist in the proposed source tree.
 - Installer arguments are quoted correctly.
@@ -127,3 +131,4 @@ Before handing off, check:
 - Wrapper creates `C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\MQ\<Vendor>` before installer execution.
 - Wrapper validation cannot pass accidentally because of a hardcoded `$true`.
 - Failure paths call `Fail-Install` or `Complete-Install`, not raw `exit`, except as the final line inside those helpers.
+- If the package is complete, user has been asked whether they want optional pre-Intune elevated RunAs validation before upload.

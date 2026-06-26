@@ -164,6 +164,92 @@ Expected wrapper behavior:
 - Confirm destructive cleanup scope with the user before writing final script.
 - Do not delete files, registry keys, services, scheduled tasks, or user data unless the user has approved the exact scope.
 
+## Build Folder Or Package Output
+
+User:
+
+```text
+Build another folder with all packaging tools and source.
+```
+
+Expected behavior:
+
+- Treat this as implementation intent, not as permission to skip confirmation.
+- Inspect source files and installer metadata if needed.
+- Show the Pre-Final Review, including source layout, generated files, cleanup/uninstall flow, detection, logs, package tool command, and exact folder to create.
+- Ask for explicit go-ahead wording before creating folders, copying installers, writing scripts, or running IntuneWinAppUtil.
+- Proceed only after the user says "go ahead", "build it", "create it", "approved", "proceed", or similar.
+- After package creation succeeds, ask whether the user wants optional pre-Intune validation with an elevated RunAs PowerShell launch.
+
+## Optional Pre-Intune Validation
+
+User:
+
+```text
+Validate the package before I upload it to Intune.
+```
+
+Expected behavior:
+
+- Read `references/pre-intune-validation.md`.
+- Ask for explicit validation approval if the user has not already clearly asked to run it.
+- Run the Intune wrapper command through `Start-Process -Verb RunAs` only after approval.
+- State that RunAs validates elevated administrator behavior, not exact Intune LocalSystem context.
+- Inspect wrapper, transcript, vendor/MSI, and relevant Intune logs.
+- Report exit code, detection result, log evidence, and issues.
+- If install validation passes, ask whether the user wants to test the uninstall script; do not run uninstall until the user confirms.
+- If there is an issue, propose a fix but do not implement until the user explicitly approves the fix.
+
+## Optional Uninstall Validation
+
+User:
+
+```text
+Test uninstall too.
+```
+
+Expected behavior:
+
+- Confirm the package has an uninstall command or `uninstall.ps1`.
+- Warn that uninstall validation removes the app from the local test machine.
+- Run uninstall through the same elevated RunAs pattern only after explicit confirmation.
+- Inspect uninstall logs and verify detection no longer finds the app.
+- Do not reinstall the app after uninstall validation unless the user explicitly asks.
+- If uninstall fails, report evidence and proposed fix before editing or rerunning destructive actions.
+
+## Strict Mode Registry Failure
+
+Observed failure:
+
+```text
+The property 'DisplayName' cannot be found on this object.
+```
+
+Expected prevention:
+
+- If the wrapper uses `Set-StrictMode -Version Latest`, read uninstall registry properties through `PSObject.Properties`.
+- Do not filter uninstall keys with direct property access such as `$_.DisplayName -like ...`.
+- Apply the same safe property pattern to install, uninstall, and detection scripts.
+- If this failure appears during validation, report that the wrapper failed before MSI execution; no MSI/vendor log is expected because the installer did not start.
+- Proposed fix is to replace direct registry property access with strict-mode-safe property reads, then rebuild and rerun validation after user approval.
+
+## Post-Install Cleanup Breaks Detection
+
+Observed failure:
+
+```text
+VALIDATE | PASS | Target app detected
+CONFIG | CLEAN | Could not remove app folder
+Detection script exits 1 because target executable is missing
+```
+
+Expected prevention:
+
+- Do not call broad leftover cleanup after a successful install if it includes the application install directory.
+- Split cleanup functions into pre-install leftover cleanup and post-install shortcut/config cleanup.
+- Post-install cleanup should not remove files, registry entries, services, or markers used by detection.
+- Run final validation after post-install cleanup so the wrapper cannot return success after breaking detection.
+
 ## Custom Source Tree
 
 User:

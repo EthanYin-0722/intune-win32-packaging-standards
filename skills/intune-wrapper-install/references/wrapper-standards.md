@@ -125,6 +125,33 @@ Prefer validation in this order:
 
 Never use `Win32_Product`.
 
+## Registry Enumeration Under Strict Mode
+
+When `Set-StrictMode -Version Latest` is enabled, never assume every uninstall registry entry has properties such as `DisplayName`, `DisplayVersion`, `Publisher`, `UninstallString`, or `QuietUninstallString`. Many registry keys are incomplete, and direct access like `$_.DisplayName` can throw before filtering reaches the target app.
+
+Use strict-mode-safe property reads:
+
+```powershell
+$displayNameProperty = $_.PSObject.Properties['DisplayName']
+$displayName = if ($null -ne $displayNameProperty) { [string]$displayNameProperty.Value } else { '' }
+if ($displayName -like 'Example App*') {
+    # process matching entry
+}
+```
+
+Apply this pattern to install wrappers, uninstall wrappers, and custom detection scripts. This prevents precheck failures where validation never reaches the installer and no MSI/vendor log is created.
+
+## Cleanup Scope
+
+Separate cleanup into pre-install and post-install phases:
+
+- Pre-install cleanup may remove approved leftover application folders only after old versions have been uninstalled.
+- Post-install cleanup must not remove the installed application directory or files that detection depends on.
+- Post-install cleanup should be limited to approved shortcuts, temporary package artifacts, or config actions that do not break detection.
+- Run final validation after post-install cleanup so the wrapper cannot return success after deleting a required executable, registry entry, service, or marker.
+
+If validation shows `VALIDATE | PASS` followed by cleanup warnings or detection failure, suspect post-install cleanup scope first. Fix by splitting app-folder cleanup from shortcut cleanup and moving final validation after the safe post-install cleanup step.
+
 ## Return Codes
 
 Default mapping:
