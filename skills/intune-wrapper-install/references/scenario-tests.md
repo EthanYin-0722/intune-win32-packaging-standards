@@ -217,6 +217,40 @@ Expected behavior:
 - Do not reinstall the app after uninstall validation unless the user explicitly asks.
 - If uninstall fails, report evidence and proposed fix before editing or rerunning destructive actions.
 
+## Detection Rule Or Script
+
+User:
+
+```text
+Create the Intune detection for this package.
+```
+
+Expected behavior:
+
+- Read `references/detection-validation.md`.
+- Prefer MSI ProductCode when stable and available; otherwise choose file version, uninstall registry, vendor CLI, or a justified service/marker signal.
+- Do not use `Win32_Product`.
+- For custom detection scripts, use strict-mode-safe registry property reads and clear installed/not-installed exit behavior.
+- Test detection after install when validation is requested, and test detection after uninstall when uninstall validation is requested.
+- If detection disagrees with wrapper validation, report the mismatch and proposed fix before changing scripts.
+
+## Uninstall Script Or Command
+
+User:
+
+```text
+Create the uninstall script too.
+```
+
+Expected behavior:
+
+- Read `references/uninstall-validation.md`.
+- Prefer vendor-documented silent uninstall, then MSI ProductCode uninstall, then verified quiet uninstall registry command.
+- Include uninstall wrapper logs and MSI/vendor uninstall logs.
+- Handle `0`, `3010`, `1641`, `1618`, `1605`, and `1614` with detection-aware outcomes.
+- Define cleanup scope and avoid deleting user data or shared vendor folders without explicit approval.
+- Ask before running uninstall validation because it removes the app from the local test machine.
+
 ## Strict Mode Registry Failure
 
 Observed failure:
@@ -274,6 +308,8 @@ The wrapper skill should cover:
 - License/config copy without leaking secrets.
 - Official-doc-first switch validation.
 - Prechecks and post-install validation.
+- Detection rule/script generation and validation after install and uninstall.
+- Uninstall wrapper generation, logging, return-code handling, cleanup scope, and detection-based removal validation.
 - Fallback for EXE child process, missing logs, missing config, and unverified switches.
 - Return-code mapping for Intune.
 - Intune wrapper launcher command.

@@ -10,7 +10,7 @@ Turn a concrete packaging failure into a reusable skill lesson so the same class
 
 - Update the smallest relevant skill file.
 - Generalize the lesson; do not add package-specific paths, product names, or one-off log noise unless they are needed as an example.
-- Prefer `references/wrapper-standards.md` for coding rules and `references/scenario-tests.md` for observed failure scenarios.
+- Prefer `references/wrapper-standards.md` for coding rules, `references/detection-validation.md` for detection lessons, `references/uninstall-validation.md` for uninstall lessons, and `references/scenario-tests.md` for observed failure scenarios.
 - Preserve the hard confirmation gate and validation fix gate.
 - Do not rewrite unrelated skill sections.
 - After editing, run lightweight validation: frontmatter exists, required fields exist, referenced files exist, and new wording can be found.
@@ -42,3 +42,14 @@ Optional uninstall validation:
 - Ask before testing uninstall even when install validation passed.
 - Run uninstall only after explicit confirmation because it removes the app from the local test machine.
 - Verify detection no longer finds the app and ask before reinstalling.
+
+Detection must be validated directly:
+
+- Install validation is incomplete until the intended Intune detection method returns installed against the final installed state.
+- Uninstall validation is incomplete until the same detection method returns not installed.
+- Do not use package source files, shortcuts, or cleanup candidates as detection targets.
+
+Uninstall return codes need detection context:
+
+- Treat MSI `1605` and `1614` as success only when detection confirms the app is not installed.
+- Treat uninstall exit `0`, `3010`, or `1641` as failure if detection still finds the target app/version.

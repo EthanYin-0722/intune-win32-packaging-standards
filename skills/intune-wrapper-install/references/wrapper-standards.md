@@ -90,6 +90,27 @@ Use this order:
 9. Return-code normalization.
 10. Catch/finally with final log line.
 
+Use segment banners for major script regions so generated wrappers are easy to scan. Use this exact shape, uppercase titles, and only for major regions:
+
+```powershell
+# ---------------------------------------------------------------------------
+# INSTALL SCRIPT
+# ---------------------------------------------------------------------------
+```
+
+Start generated `install.ps1` scripts with:
+
+```powershell
+# ---------------------------------------------------------------------------
+# INSTALL SCRIPT
+# Package: <AppName> <Version>
+# Vendor:  <Vendor>
+# Purpose: Intune Win32 wrapper install script
+# ---------------------------------------------------------------------------
+```
+
+Then use banners such as `RUNTIME SETTINGS`, `PACKAGE METADATA`, `LOGGING`, `HELPER FUNCTIONS`, `SOURCE VALIDATION`, `PRECHECK`, `INSTALL`, `CONFIGURATION`, `VALIDATION`, `COMPLETION`, and `ERROR HANDLING`. Avoid inline comments for obvious PowerShell statements.
+
 When all package information is known, build the wrapper directly using `references/build-when-ready.md`; do not continue with generic intake questions.
 
 ## Installer Patterns
@@ -124,6 +145,22 @@ Prefer validation in this order:
 5. Service/process/marker only when vendor docs justify it.
 
 Never use `Win32_Product`.
+
+For Intune detection details and custom `detect.ps1` behavior, read `detection-validation.md`. Wrapper validation and Intune detection should agree on the final installed state. If they disagree, treat it as a packaging issue and report evidence before proposing a fix.
+
+## Uninstall Wrappers
+
+When a package needs `uninstall.ps1`, use the same logging discipline as install wrappers and read `uninstall-validation.md`.
+
+Prefer vendor-documented silent uninstall or MSI ProductCode uninstall. Use `QuietUninstallString` only when verified silent and noninteractive. Never use `Win32_Product`.
+
+Uninstall wrappers should use phases:
+
+```text
+START, PRECHECK, STOP, UNINSTALL, CLEANUP, VALIDATE, FALLBACK, COMPLETE
+```
+
+Validation after uninstall must run the intended detection method and expect not installed. Return nonzero if uninstall reports success but detection still finds the target app/version.
 
 ## Registry Enumeration Under Strict Mode
 

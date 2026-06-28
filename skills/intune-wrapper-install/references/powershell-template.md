@@ -3,13 +3,29 @@
 Use this structure when drafting `install.ps1`. Adapt names, installer command, file placement, and validation to the package.
 
 ```powershell
+# ---------------------------------------------------------------------------
+# INSTALL SCRIPT
+# Package: <AppName> <Version>
+# Vendor:  <Vendor>
+# Purpose: Intune Win32 wrapper install script
+# ---------------------------------------------------------------------------
+
 #requires -Version 5.1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# ---------------------------------------------------------------------------
+# PACKAGE METADATA
+# ---------------------------------------------------------------------------
+
 $Vendor = '<Vendor>'
 $AppName = '<AppName>'
 $AppVersion = '<Version>'
+
+# ---------------------------------------------------------------------------
+# LOGGING
+# ---------------------------------------------------------------------------
+
 $VendorSafe = (($Vendor.Split([IO.Path]::GetInvalidFileNameChars()) -join '_').Trim())
 $AppSafe = (($AppName.Split([IO.Path]::GetInvalidFileNameChars()) -join '_').Trim())
 $VersionSafe = (($AppVersion.Split([IO.Path]::GetInvalidFileNameChars()) -join '_').Trim())
@@ -21,6 +37,10 @@ $VendorLog = Join-Path -Path $LogRoot -ChildPath "$LogPrefix-install-vendor.log"
 $SuccessExitCodes = @(0, 3010, 1641)
 $RetryExitCodes = @(1618)
 $TranscriptStarted = $false
+
+# ---------------------------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------------------------
 
 function ConvertTo-LogValue {
     param([AllowNull()][object]$Value)
@@ -118,6 +138,10 @@ function Fail-Install {
     exit $ExitCode
 }
 
+# ---------------------------------------------------------------------------
+# RUNTIME INITIALIZATION
+# ---------------------------------------------------------------------------
+
 New-Item -Path $LogRoot -ItemType Directory -Force | Out-Null
 Write-PackageLog -Level INFO -Phase START -Event BEGIN -Message 'Starting install' -Data @{
     vendor = $Vendor
@@ -134,10 +158,18 @@ try {
 }
 
 try {
+# ---------------------------------------------------------------------------
+# SOURCE VALIDATION
+# ---------------------------------------------------------------------------
+
     # PRECHECK
     $InstallerRelativePath = '<installer>'
     $InstallerPath = Resolve-PackagePath -RelativePath $InstallerRelativePath
     Write-PackageLog -Level INFO -Phase PRECHECK -Event PASS -Message 'Source files found' -Data @{ installer = $InstallerRelativePath }
+
+# ---------------------------------------------------------------------------
+# INSTALL
+# ---------------------------------------------------------------------------
 
     # INSTALL - REQUIRED: assign $ExitCode from exactly one installer branch.
     $ExitCode = $null
@@ -158,9 +190,17 @@ try {
     #     Fail-Install -Message 'Timed out waiting for installer completion signal' -ExitCode 1
     # }
 
+# ---------------------------------------------------------------------------
+# CONFIGURATION
+# ---------------------------------------------------------------------------
+
     # CONFIG
     # Copy license/config files here when required. Resolve them relative to $PSScriptRoot.
     # Log only summaries, not secrets.
+
+# ---------------------------------------------------------------------------
+# VALIDATION
+# ---------------------------------------------------------------------------
 
     # VALIDATE
     # Use MSI ProductCode, file version, registry, or vendor validation here.
@@ -179,8 +219,16 @@ try {
     }
     Write-PackageLog -Level INFO -Phase VALIDATE -Event PASS -Message 'Application detected'
 
+# ---------------------------------------------------------------------------
+# COMPLETION
+# ---------------------------------------------------------------------------
+
     Complete-Install -ExitCode $ExitCode
 } catch {
+# ---------------------------------------------------------------------------
+# ERROR HANDLING
+# ---------------------------------------------------------------------------
+
     Fail-Install -Message 'Unhandled install exception' -ExitCode 1 -Data @{ error = $_.Exception.Message }
 } finally {
     if ($TranscriptStarted) {

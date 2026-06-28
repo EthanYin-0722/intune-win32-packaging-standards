@@ -58,6 +58,8 @@ Review for:
 - Detection/validation mismatch.
 - Permission, path, service, process, or cleanup failures.
 
+Read `detection-validation.md` when the package has an Intune detection rule or custom `detect.ps1`. Install validation is not complete until the intended detection method has been run against the final installed state and exits with the expected installed result.
+
 ## Optional Uninstall Validation
 
 After install validation passes, ask the user whether they want to test the uninstall script:
@@ -81,6 +83,8 @@ $process.ExitCode
 
 After uninstall validation, inspect uninstall wrapper/transcript/vendor logs and verify the app is no longer detected using the package detection method. Report the result before any reinstall or fix. If the app must be restored for packaging continuity, ask before reinstalling it.
 
+Read `uninstall-validation.md` before running or evaluating uninstall validation. Uninstall validation is not complete until the intended detection method reports not installed.
+
 ## Result Format
 
 Report validation results before any fix:
@@ -90,8 +94,9 @@ Report validation results before any fix:
 3. `Evidence`: concise log lines or summarized events with paths.
 4. `Issues`: each issue with likely cause and impact.
 5. `Proposed Solution`: exact change or test to perform next.
-6. `Uninstall Prompt`: if install validation passed and uninstall was not already requested, ask whether to test uninstall.
-7. `Confirmation Ask`: ask for explicit approval before editing scripts, rebuilding packages, uninstalling/reinstalling software, or rerunning destructive actions.
+6. `Detection`: detection method, command/script result, exit code, and expected Intune installed/not-installed behavior.
+7. `Uninstall Prompt`: if install validation passed and uninstall was not already requested, ask whether to test uninstall.
+8. `Confirmation Ask`: ask for explicit approval before editing scripts, rebuilding packages, uninstalling/reinstalling software, or rerunning destructive actions.
 
 ## Fix Gate
 
