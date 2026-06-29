@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intune Wrapper Install"
+  short_description: "Create Intune Win32 install, detection, and uninstall wrappers"
+  default_prompt: "Use $intune-wrapper-install to create a robust Intune Win32 PowerShell package with install, detection, uninstall, logging, and validation guidance."
