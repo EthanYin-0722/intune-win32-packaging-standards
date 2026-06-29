@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Intune Wrapper Log Color Example</title>
+  <style>
+    :root {
+      --bg: #111318;
+      --panel: #171a21;
+      --text: #e7eaf0;
+      --muted: #8b93a7;
+      --info: #8fc7ff;
+      --warn: #ffd166;
+      --error: #ff6b6b;
+      --start: #67e8f9;
+      --precheck: #c084fc;
+      --install: #60a5fa;
+      --validate: #4ade80;
+      --complete: #22c55e;
+      --key: #9ca3af;
+      --value: #f8fafc;
+      --line: #2a2f3a;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 18px;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      background: #1f2430;
+      font-size: 12px;
+    }
+
+    .log {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+    }
+
+    .row {
+      white-space: pre;
+      padding: 4px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row:hover {
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .boundary {
+      color: #f8fafc;
+      background: rgba(96, 165, 250, 0.11);
+      font-weight: 700;
+    }
+
+    .boundary-finish {
+      color: #dcfce7;
+      background: rgba(34, 197, 94, 0.12);
+      font-weight: 700;
+    }
+
+    .timestamp { color: var(--muted); }
+    .sep { color: #4b5563; }
+    .level-info { color: var(--info); font-weight: 700; }
+    .level-warn { color: var(--warn); font-weight: 700; }
+    .level-error { color: var(--error); font-weight: 700; }
+    .phase-start { color: var(--start); font-weight: 700; }
+    .phase-precheck { color: var(--precheck); font-weight: 700; }
+    .phase-install { color: var(--install); font-weight: 700; }
+    .phase-config { color: #f0abfc; font-weight: 700; }
+    .phase-validate { color: var(--validate); font-weight: 700; }
+    .phase-fallback { color: var(--warn); font-weight: 700; }
+    .phase-complete { color: var(--complete); font-weight: 700; }
+    .event-pass,
+    .event-success { color: var(--complete); font-weight: 700; }
+    .event-failed,
+    .event-fail,
+    .event-exception { color: var(--error); font-weight: 700; }
+    .event-retry { color: var(--warn); font-weight: 700; }
+    .event-neutral { color: #e5e7eb; font-weight: 700; }
+    .message { color: var(--text); }
+    .key { color: var(--key); }
+    .value { color: var(--value); }
+    .exit-ok { color: var(--complete); font-weight: 700; }
+    .exit-reboot,
+    .exit-retry { color: var(--warn); font-weight: 700; }
+    .exit-fail { color: var(--error); font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Intune Wrapper Log Color Example</h1>
+    <p>Template preview only. Keep production wrapper logs plain text; use this file as a copied viewer/example in package handoff folders.</p>
+
+    <div class="legend">
+      <span class="pill"><span class="level-info">INFO</span></span>
+      <span class="pill"><span class="level-warn">WARN</span></span>
+      <span class="pill"><span class="level-error">ERROR</span></span>
+      <span class="pill"><span class="phase-start">START</span></span>
+      <span class="pill"><span class="phase-precheck">PRECHECK</span></span>
+      <span class="pill"><span class="phase-install">INSTALL</span></span>
+      <span class="pill"><span class="phase-validate">VALIDATE</span></span>
+      <span class="pill"><span class="phase-complete">COMPLETE</span></span>
+      <span class="pill"><span class="event-success">SUCCESS/PASS</span></span>
+      <span class="pill"><span class="exit-ok">exitCode=0</span></span>
+    </div>
+
+    <section class="log" aria-label="Color-coded wrapper log">
+      <div class="row boundary">----------------------------------------------------------------------------------------</div>
+      <div class="row boundary">INSTALL START: timestamp=2026-06-29T15:34:37.010+10:00; vendor=Contoso; app=Example-App; version=1.0; runId=00000000-0000-0000-0000-000000000000; context=NT AUTHORITY\SYSTEM</div>
+      <div class="row boundary">----------------------------------------------------------------------------------------</div>
+      <div class="row"><span class="timestamp">2026-06-29T15:34:37.010+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-start">START</span> <span class="sep">|</span> <span class="event-neutral">BEGIN</span> <span class="sep">|</span> <span class="message">Starting install</span> <span class="sep">|</span> <span class="key">vendor=</span><span class="value">Contoso</span><span class="sep">;</span> <span class="key">app=</span><span class="value">Example-App</span><span class="sep">;</span> <span class="key">version=</span><span class="value">1.0</span><span class="sep">;</span> <span class="key">context=</span><span class="value">NT AUTHORITY\SYSTEM</span></div>
+      <div class="row"><span class="timestamp">2026-06-29T15:34:37.032+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-precheck">PRECHECK</span> <span class="sep">|</span> <span class="event-pass">PASS</span> <span class="sep">|</span> <span class="message">Source and prerequisite checks passed</span> <span class="sep">|</span> <span class="key">installer=</span><span class="value">setup.exe</span></div>
+      <div class="row"><span class="timestamp">2026-06-29T15:34:38.088+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-install">INSTALL</span> <span class="sep">|</span> <span class="event-neutral">EXEC</span> <span class="sep">|</span> <span class="message">Running installer</span> <span class="sep">|</span> <span class="key">type=</span><span class="value">EXE</span></div>
+      <div class="row"><span class="timestamp">2026-06-29T15:35:16.514+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-install">INSTALL</span> <span class="sep">|</span> <span class="event-neutral">EXIT</span> <span class="sep">|</span> <span class="message">Installer completed</span> <span class="sep">|</span> <span class="exit-ok">exitCode=0</span></div>
+      <div class="row"><span class="timestamp">2026-06-29T15:35:19.596+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-validate">VALIDATE</span> <span class="sep">|</span> <span class="event-pass">PASS</span> <span class="sep">|</span> <span class="message">Application detected</span> <span class="sep">|</span> <span class="key">method=</span><span class="value">customScript</span></div>
+      <div class="row"><span class="timestamp">2026-06-29T15:35:19.608+10:00</span> <span class="sep">|</span> <span class="level-info">INFO</span> <span class="sep">|</span> <span class="phase-complete">COMPLETE</span> <span class="sep">|</span> <span class="event-success">SUCCESS</span> <span class="sep">|</span> <span class="message">Install completed</span> <span class="sep">|</span> <span class="exit-ok">exitCode=0</span></div>
+      <div class="row boundary-finish">----------------------------------------------------------------------------------------</div>
+      <div class="row boundary-finish">INSTALL FINISH: timestamp=2026-06-29T15:35:19.608+10:00; vendor=Contoso; app=Example-App; version=1.0; runId=00000000-0000-0000-0000-000000000000; result=SUCCESS; exitCode=0</div>
+      <div class="row boundary-finish">----------------------------------------------------------------------------------------</div>
+    </section>
+  </main>
+</body>
+</html>

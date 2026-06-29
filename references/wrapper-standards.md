@@ -39,7 +39,7 @@ When producing a complete package handoff, keep the master package folder easy f
 
 Use `Source` as the folder passed to `IntuneWinAppUtil`, not the master folder. Use `Output-Intune-Packages` only for generated `.intunewin` files. Keep reusable or downloaded build tools in `Tools`. Include a root `README.md` with the upload file, install/uninstall commands, detection settings, prerequisites, included versions, log paths, and rebuild command.
 
-When the package has a handoff audience beyond the packager, include a concise root `OnePager.md` with the Intune upload settings, dependency notes, validation status, and primary troubleshooting log. If a color-coded log preview is useful, create a separate static HTML example such as `Log-Color-Example.html` in the master folder. Do not add color escape codes, HTML, or viewer-only formatting to the wrapper script or actual `.log` files; keep production logs plain text and apply color only in the separate viewer/example.
+When the package has a handoff audience beyond the packager, include a concise root `OnePager.md` with the Intune upload settings, dependency notes, validation status, and primary troubleshooting log. If a color-coded log preview is useful, copy `references/log-color-example-template.html` into the package master folder as `Log-Color-Example.html` and tailor the sample rows to the package. Do not add color escape codes, HTML, or viewer-only formatting to the wrapper script or actual `.log` files; keep production logs plain text and apply color only in the separate viewer/example.
 
 ## Log Layout
 
